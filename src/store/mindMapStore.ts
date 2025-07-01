@@ -37,7 +37,32 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
 
   // --- Actions ---
 
+  // by Amit Yadav: Create a root node at a default position and persist to Firestore
   addRootNode: async () => {
+    const store = get();
+    if (store.rootNodeId) return; // Only one root node
+
+    const rootId = generateId();
+    const rootNode: MindMapNode = {
+      id: rootId,
+      label: 'Root Node',
+      parentId: null,
+      children: [],
+      position: { x: 300, y: 200 }, // Center-ish default
+      collapsed: false,
+    };
+
+    set(state => ({
+      nodes: { ...state.nodes, [rootId]: rootNode },
+      rootNodeId: rootId,
+      selectedNodeId: rootId,
+    }));
+    try {
+      await store.updateNode(rootId, {}); // Persist to Firestore
+    } catch (e) {
+      // by Amit Yadav: Error handling for Firestore
+      console.error('Error creating root node in Firestore:', e);
+    }
   },
 
   addRootNodeAtPosition: async (pos: { x: number; y: number }) => {
@@ -59,28 +84,14 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
       rootNodeId: rootId,
       selectedNodeId: rootId,
     }));
-    await store.updateNode(rootId, {}); // Persist to Firebase
-    const { rootNodeId, updateNode } = get();
-    if (rootNodeId) return; // Only one root node
-
-    const newId = generateId();
-    const newNode: MindMapNode = {
-      id: newId,
-      label: 'Root Node',
-      parentId: null,
-      children: [],
-      position: { x: 0, y: 0 }, // Center of the initial view
-      collapsed: false,
-    };
-
-    set(state => ({
-      nodes: { ...state.nodes, [newId]: newNode },
-      rootNodeId: newId,
-      selectedNodeId: newId,
-    }));
-    await updateNode(newId, {}); // Persist to Firebase
+    try {
+      await store.updateNode(rootId, {}); // Persist to Firestore
+    } catch (e) {
+      console.error('Error creating root node at position in Firestore:', e);
+    }
   },
 
+  // by Amit Yadav: Add a child node to a parent, update Firestore, and maintain hierarchy
   addNode: async (parentId: NodeId) => {
     const store = get();
     const parent = store.nodes[parentId];
@@ -109,10 +120,16 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
       },
       selectedNodeId: childId,
     }));
-    await store.updateNode(childId, {}); // Persist new node
-    await store.updateNode(parentId, {}); // Persist parent's children array update
+    try {
+      await store.updateNode(childId, {}); // Persist new node
+      await store.updateNode(parentId, {}); // Persist parent's children array update
+    } catch (e) {
+      // by Amit Yadav: Error handling for Firestore
+      console.error('Error adding child node in Firestore:', e);
+    }
   },
 
+  // by Amit Yadav: Add a child node at a specific position, update Firestore, and maintain hierarchy
   addNodeAtPosition: async (parentId: NodeId, pos: { x: number; y: number }) => {
     const store = get();
     const parent = store.nodes[parentId];
@@ -139,37 +156,12 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
       },
       selectedNodeId: childId,
     }));
-    await store.updateNode(childId, {}); // Persist new node
-    await store.updateNode(parentId, {}); // Persist parent's children array update
-    const { nodes, updateNode } = get();
-    const parentNode = nodes[parentId];
-    if (!parentNode) return;
-
-    const newId = generateId();
-    const newPosition = calculateNewChildPosition(parentNode, parentNode.children.length);
-
-    const newNode: MindMapNode = {
-      id: newId,
-      label: 'New Node',
-      parentId: parentId,
-      children: [],
-      position: newPosition,
-      collapsed: false,
-    };
-
-    set(state => ({
-      nodes: {
-        ...state.nodes,
-        [newId]: newNode,
-        [parentId]: {
-          ...state.nodes[parentId],
-          children: [...state.nodes[parentId].children, newId],
-        },
-      },
-      selectedNodeId: newId,
-    }));
-    await updateNode(newId, {}); // Persist new node
-    await updateNode(parentId, {}); // Persist parent's children array update
+    try {
+      await store.updateNode(childId, {}); // Persist new node
+      await store.updateNode(parentId, {}); // Persist parent's children array update
+    } catch (e) {
+      console.error('Error adding child node at position in Firestore:', e);
+    }
   },
 
   updateNode: async (nodeId: NodeId, updates: Partial<MindMapNode>) => {
@@ -324,7 +316,7 @@ export const startFirebaseListener = () => {
     (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        useMindMapStore.getState().setNodesFromFirebase(data.nodes || {}, data.rootNodeId || null);
+        useMindMapStore.getState().setNodesFromFirebase(data.nodes ?? {}, data.rootNodeId ?? null);
         useMindMapStore.getState().setSyncStatus('online');
       } else {
         // Document doesn't exist, initialize an empty map
