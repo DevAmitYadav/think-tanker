@@ -1,0 +1,182 @@
+import React, { useState, useRef, useEffect, memo } from 'react';
+import NodeLabelForm from './ui/NodeLabelForm';
+import type { MindMapNode as MindMapNodeType } from '../types';
+import { useMindMapStore } from '../store/mindMapStore';
+import { usePointerDrag } from '../hooks/usePointerDrag';
+import { motion } from 'framer-motion';
+import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/20/solid';
+
+interface MindMapNodeProps {
+  node: MindMapNodeType;
+  canvasOffset: { x: number; y: number };
+  canvasScale: number;
+}
+
+const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canvasScale }) => {
+  const {
+    updateNode,
+    addNode,
+    deleteNode,
+    toggleCollapse,
+    setSelectedNodeId,
+    selectedNodeId,
+    rootNodeId
+  } = useMindMapStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  const isSelected = selectedNodeId === node.id;
+  const isRoot = node.id === rootNodeId;
+
+  // Position the node on the canvas based on its stored position, offset, and scale
+  const nodeStyle = {
+    left: node.position.x * canvasScale + canvasOffset.x,
+    top: node.position.y * canvasScale + canvasOffset.y,
+    transform: `scale(${canvasScale})`, // Scale the node itself slightly for visual effect
+    transformOrigin: 'top left', // Scale from top-left for consistent positioning
+  };
+
+  // by Amit Yadav: Start editing label
+  const handleLabelDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  // by Amit Yadav: Save label with validation
+  const handleLabelSave = (label: string) => {
+    if (label.trim() !== node.label.trim()) {
+      updateNode(node.id, { label: label.trim() });
+    }
+    setIsEditing(false);
+  };
+
+  // by Amit Yadav: Cancel editing
+  const handleLabelCancel = () => {
+    setIsEditing(false);
+  };
+
+  // Focus the input when editing starts
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  const { isDragging, pointerDown } = usePointerDrag({
+    onPointerDown: (e) => {
+      // Store initial position relative to node's state position
+      startPosRef.current = { x: node.position.x, y: node.position.y };
+      setSelectedNodeId(node.id);
+      // Prevent selection of text during drag
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    onDragMove: (e, dx, dy) => {
+      // Calculate new position in unscaled canvas coordinates
+      const newX = startPosRef.current.x + dx / canvasScale;
+      const newY = startPosRef.current.y + dy / canvasScale;
+      updateNode(node.id, { position: { x: newX, y: newY } });
+    },
+    onDragEnd: (e) => {
+      // No specific action needed on drag end for position, as updates are continuous.
+      // But this callback is good for committing a final state if updates were debounced.
+      e.stopPropagation();
+    },
+    onClick: (e) => {
+      setSelectedNodeId(node.id);
+      e.stopPropagation();
+    }
+  });
+
+  // Ref to store the node's position *at the start of the drag*
+  // This helps calculate the delta from the original position, not the current continuously updated one.
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+  return (
+    <motion.div
+      ref={nodeRef}
+      className={`mind-map-node absolute bg-white shadow-lg rounded-lg px-4 py-2 flex flex-col justify-center items-center cursor-default min-w-[120px] max-w-[200px] whitespace-normal break-words transition-all duration-100 ease-out border-2 ${
+        isSelected ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200'
+      } ${isDragging ? 'z-20 node-grabbing' : 'z-10'}`}
+      style={nodeStyle}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: canvasScale }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.15 }}
+      onPointerDown={pointerDown}
+      onClick={(e) => {
+        // This is handled by usePointerDrag's onClick, but good for safety
+        e.stopPropagation();
+        setSelectedNodeId(node.id);
+      }}
+      // Prevent context menu on right click
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {isEditing ? (
+        <NodeLabelForm
+          initialLabel={node.label}
+          onSubmit={handleLabelSave}
+          onCancel={handleLabelCancel}
+        />
+      ) : (
+        <span
+          className="mind-map-node-label text-center text-gray-800 text-sm font-medium py-1 px-2 cursor-text select-none"
+          onDoubleClick={handleLabelDoubleClick}
+        >
+          {node.label}
+        </span>
+      )}
+
+      {isSelected && (
+        <div className="absolute -bottom-8 flex space-x-1.5 bg-white p-1 rounded-md shadow-lg border border-gray-200 z-30">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addNode(node.id);
+            }}
+            className="p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors duration-150"
+            title="Add Child Node"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
+          {!isRoot && ( // Don't allow deleting the root node directly
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteNode(node.id);
+              }}
+              className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-colors duration-150"
+              title="Delete Node"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLabelDoubleClick();
+            }}
+            className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
+            title="Edit Label"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </button>
+          {node.children.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapse(node.id);
+              }}
+              className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
+              title={node.collapsed ? "Expand Node" : "Collapse Node"}
+            >
+              {node.collapsed ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUpIcon className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+});
+
+export default MindMapNode;
