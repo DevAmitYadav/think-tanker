@@ -1,0 +1,69 @@
+
+@import "tailwindcss";
+
+/* Custom print styles */
+@media print {
+  /* Hide UI elements not meant for print */
+  body > #root > div:not(.print-container) {
+    display: none !important;
+  }
+  .print-container {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible !important; /* Ensure content is not clipped */
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .print-container .mind-map-node,
+  .print-container .mind-map-connector {
+    /* Adjust styles for print */
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #000;
+    box-shadow: none;
+  }
+  /* Ensure text is readable */
+  .mind-map-node-label {
+    color: #000 !important;
+  }
+}
+
+/* Ensure the root element fills the screen */
+html, body, #root, #root > div {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Hide scrollbars, pan/zoom will handle */
+}
+
+/* For pan & zoom, cursor styles */
+.pan-grab {
+  cursor: grab;
+}
+.pan-grabbing {
+  cursor: grabbing;
+}
+.node-grabbing {
+  cursor: grabbing;
+}
+
+@tailwind components;
+
+@layer components {
+  .btn {
+    @apply flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 ease-in-out;
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-800 hover:bg-gray-200;
+  }
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600;
+  }
+}
