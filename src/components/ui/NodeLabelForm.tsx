@@ -8,9 +8,11 @@ interface NodeLabelFormProps {
   initialLabel: string;
   onSubmit: (label: string) => void;
   onCancel: () => void;
+  isSaving?: boolean;
 }
 
-const NodeLabelForm: React.FC<NodeLabelFormProps> = ({ initialLabel, onSubmit, onCancel }) => {
+
+const NodeLabelForm: React.FC<NodeLabelFormProps> = ({ initialLabel, onSubmit, onCancel, isSaving }) => {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     defaultValues: { label: initialLabel },
     resolver: yupResolver(nodeLabelSchema),
@@ -25,8 +27,8 @@ const NodeLabelForm: React.FC<NodeLabelFormProps> = ({ initialLabel, onSubmit, o
       />
       {errors.label && <span className="text-xs text-red-600 mt-1">{errors.label.message as string}</span>}
       <div className="flex space-x-2 mt-2">
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>Save</button>
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting || isSaving}>{isSaving ? 'Saving...' : 'Save'}</button>
+        <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isSaving}>Cancel</button>
       </div>
     </form>
   );
