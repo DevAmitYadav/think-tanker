@@ -39,7 +39,7 @@ const PrintView: React.FC = () => {
   const offsetY = -minY + 50; // Add some padding
 
   return (
-    <div className="print-container hidden absolute w-full h-full overflow-hidden bg-white text-black"
+    <div className="print-container absolute w-full h-full overflow-hidden bg-white text-black print:block hidden"
          style={{
            // Apply a transform to shift content so it's visible in print
            // This moves everything by offsetX, offsetY pixels.

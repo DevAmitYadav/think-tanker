@@ -26,6 +26,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
+
   const isSelected = selectedNodeId === node.id;
   const isRoot = node.id === rootNodeId;
 
@@ -43,9 +44,15 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   };
 
   // by Amit Yadav: Save label with validation
-  const handleLabelSave = (label: string) => {
+  const handleLabelSave = async (label: string) => {
     if (label.trim() !== node.label.trim()) {
-      updateNode(node.id, { label: label.trim() });
+      setIsSaving(true);
+      try {
+        await updateNode(node.id, { label: label.trim() });
+      } catch (e) {
+        alert('Failed to update label.');
+      }
+      setIsSaving(false);
     }
     setIsEditing(false);
   };
@@ -55,6 +62,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
     setIsEditing(false);
   };
 
+
   // Focus the input when editing starts
   useEffect(() => {
     if (isEditing) {
@@ -62,24 +70,28 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
     }
   }, [isEditing]);
 
+  // by Amit Yadav: Ref to store the node's position *at the start of the drag*
+  // This helps calculate the delta from the original position, not the current continuously updated one.
+  const startPosRef = useRef({ x: 0, y: 0 });
+
+
+
+  // by Amit Yadav: Robust drag logic with correct ref usage
   const { isDragging, pointerDown } = usePointerDrag({
     onPointerDown: (e) => {
-      // Store initial position relative to node's state position
       startPosRef.current = { x: node.position.x, y: node.position.y };
       setSelectedNodeId(node.id);
-      // Prevent selection of text during drag
       e.preventDefault();
       e.stopPropagation();
     },
-    onDragMove: (e, dx, dy) => {
+    onDragMove: (_e, dx, dy) => {
       // Calculate new position in unscaled canvas coordinates
       const newX = startPosRef.current.x + dx / canvasScale;
       const newY = startPosRef.current.y + dy / canvasScale;
+      // by Amit Yadav: Always persist to Firestore for real-time sync
       updateNode(node.id, { position: { x: newX, y: newY } });
     },
     onDragEnd: (e) => {
-      // No specific action needed on drag end for position, as updates are continuous.
-      // But this callback is good for committing a final state if updates were debounced.
       e.stopPropagation();
     },
     onClick: (e) => {
@@ -87,10 +99,6 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       e.stopPropagation();
     }
   });
-
-  // Ref to store the node's position *at the start of the drag*
-  // This helps calculate the delta from the original position, not the current continuously updated one.
-  const startPosRef = useRef({ x: 0, y: 0 });
 
   return (
     <motion.div
@@ -117,11 +125,20 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           initialLabel={node.label}
           onSubmit={handleLabelSave}
           onCancel={handleLabelCancel}
+          isSaving={isSaving}
         />
       ) : (
         <span
           className="mind-map-node-label text-center text-gray-800 text-sm font-medium py-1 px-2 cursor-text select-none"
           onDoubleClick={handleLabelDoubleClick}
+          tabIndex={0}
+          role="button"
+          aria-label="Edit node label"
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleLabelDoubleClick();
+            }
+          }}
         >
           {node.label}
         </span>
@@ -130,23 +147,39 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       {isSelected && (
         <div className="absolute -bottom-8 flex space-x-1.5 bg-white p-1 rounded-md shadow-lg border border-gray-200 z-30">
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              addNode(node.id);
+              setIsAdding(true);
+              try {
+                await addNode(node.id);
+              } catch (err) {
+                alert('Failed to add child node.');
+              }
+              setIsAdding(false);
             }}
-            className="p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors duration-150"
+            className={`p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors duration-150 ${isAdding ? 'opacity-50 cursor-not-allowed' : ''}`}
             title="Add Child Node"
+            aria-label="Add Child Node"
+            disabled={isAdding}
           >
-            <PlusIcon className="h-4 w-4" />
+            {isAdding ? (
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+            ) : (
+              <PlusIcon className="h-4 w-4" />
+            )}
           </button>
           {!isRoot && ( // Don't allow deleting the root node directly
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                deleteNode(node.id);
+                // by Amit Yadav: Confirm before deleting
+                if (window.confirm('Delete this node and all its children?')) {
+                  await deleteNode(node.id);
+                }
               }}
               className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-colors duration-150"
               title="Delete Node"
+              aria-label="Delete Node"
             >
               <TrashIcon className="h-4 w-4" />
             </button>
@@ -158,6 +191,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
             }}
             className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
             title="Edit Label"
+            aria-label="Edit Label"
           >
             <PencilIcon className="h-4 w-4" />
           </button>
@@ -169,6 +203,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
               }}
               className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
               title={node.collapsed ? "Expand Node" : "Collapse Node"}
+              aria-label={node.collapsed ? "Expand Node" : "Collapse Node"}
             >
               {node.collapsed ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUpIcon className="h-4 w-4" />}
             </button>

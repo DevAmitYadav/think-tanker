@@ -16,16 +16,32 @@ const Toolbar: React.FC = memo(() => {
     // nodes // by Amit Yadav: removed unused variable
   } = useMindMapStore();
 
-  // by Amit Yadav: Print handler
+  // by Amit Yadav: Print handler (shows print view only for print)
   const handlePrint = () => {
     window.print();
   };
 
-  // by Amit Yadav: Reset view handler
+  // by Amit Yadav: Reset view handler (zoom to fit all nodes)
   const handleResetView = () => {
-    setCanvasScale(1);
-    panCanvas(-useMindMapStore.getState().canvasOffset.x, -useMindMapStore.getState().canvasOffset.y);
-    // by Amit Yadav: Optionally center root node if it exists (future enhancement)
+    const { nodes, canvasOffset } = useMindMapStore.getState();
+    const visibleNodes = Object.values(nodes).filter(n => n && (!n.parentId || nodes[n.parentId]));
+    if (visibleNodes.length === 0) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    visibleNodes.forEach(node => {
+      minX = Math.min(minX, node.position.x);
+      minY = Math.min(minY, node.position.y);
+      maxX = Math.max(maxX, node.position.x);
+      maxY = Math.max(maxY, node.position.y);
+    });
+    const width = maxX - minX + 160;
+    const height = maxY - minY + 40;
+    const cWidth = window.innerWidth;
+    const cHeight = 1200; // or get from container
+    const scale = Math.min(cWidth / width, cHeight / height, 1);
+    const offsetX = (cWidth - width * scale) / 2 - minX * scale;
+    const offsetY = (cHeight - height * scale) / 2 - minY * scale;
+    setCanvasScale(scale);
+    panCanvas(offsetX - canvasOffset.x, offsetY - canvasOffset.y);
   };
 
   return (
