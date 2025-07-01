@@ -24,6 +24,8 @@ interface MindMapActions {
   panCanvas: (dx: number, dy: number) => void;
   setCanvasScale: (scale: number) => void;
   setIsDraggingCanvas: (isDragging: boolean) => void;
+  editingNodeId: NodeId | null;
+  setEditingNodeId: (id: NodeId | null) => void;
 }
 
 export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) => ({
@@ -34,6 +36,7 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
   isDraggingCanvas: false,
   canvasOffset: { x: 0, y: 0 },
   canvasScale: 1,
+  editingNodeId: null,
 
   // --- Actions ---
 
@@ -278,6 +281,7 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
   },
   
   setIsDraggingCanvas: (isDragging: boolean) => set({ isDraggingCanvas: isDragging }),
+  setEditingNodeId: (id: NodeId | null) => set({ editingNodeId: id }),
 }));
 
 

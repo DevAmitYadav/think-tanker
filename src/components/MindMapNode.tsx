@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, memo } from 'react';
+import React, { useRef, useEffect, memo } from 'react';
 import NodeLabelForm from './ui/NodeLabelForm';
 import type { MindMapNode as MindMapNodeType } from '../types';
 import { useMindMapStore } from '../store/mindMapStore';
@@ -20,15 +20,19 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
     toggleCollapse,
     setSelectedNodeId,
     selectedNodeId,
-    rootNodeId
+    rootNodeId,
+    editingNodeId,
+    setEditingNodeId
   } = useMindMapStore();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
 
   const isSelected = selectedNodeId === node.id;
   const isRoot = node.id === rootNodeId;
+  const isEditing = editingNodeId === node.id;
 
   // Position the node on the canvas based on its stored position, offset, and scale
   const nodeStyle = {
@@ -40,7 +44,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
 
   // by Amit Yadav: Start editing label
   const handleLabelDoubleClick = () => {
-    setIsEditing(true);
+    setEditingNodeId(node.id);
   };
 
   // by Amit Yadav: Save label with validation
@@ -54,12 +58,12 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       }
       setIsSaving(false);
     }
-    setIsEditing(false);
+    setEditingNodeId(null);
   };
 
   // by Amit Yadav: Cancel editing
   const handleLabelCancel = () => {
-    setIsEditing(false);
+    setEditingNodeId(null);
   };
 
 
@@ -126,11 +130,20 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           onSubmit={handleLabelSave}
           onCancel={handleLabelCancel}
           isSaving={isSaving}
+          inputRef={inputRef}
+          autoFocus
         />
       ) : (
         <span
           className="mind-map-node-label text-center text-gray-800 text-sm font-medium py-1 px-2 cursor-text select-none"
           onDoubleClick={handleLabelDoubleClick}
+          onTouchEnd={e => {
+            // Only trigger on tap, not drag
+            if (!isEditing) {
+              e.stopPropagation();
+              handleLabelDoubleClick();
+            }
+          }}
           tabIndex={0}
           role="button"
           aria-label="Edit node label"
@@ -213,5 +226,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
     </motion.div>
   );
 });
+
+MindMapNode.displayName = 'MindMapNode';
 
 export default MindMapNode;
