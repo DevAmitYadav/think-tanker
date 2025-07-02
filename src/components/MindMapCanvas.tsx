@@ -20,6 +20,9 @@ const MindMapCanvas: React.FC = memo(() => {
     rootNodeId,
     canvasOffset,
     canvasScale,
+    panCanvas,
+    setIsDraggingCanvas,
+    setSelectedNodeId,
     isDraggingCanvas
   } = useMindMapStore();
 
@@ -142,18 +145,15 @@ const MindMapCanvas: React.FC = memo(() => {
     useMindMapStore.getState().panCanvas(offsetX - canvasOffset.x, offsetY - canvasOffset.y);
   };
 
+  // --- UI ---
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div
         ref={canvasRef}
-        className="mindmap-canvas-viewport w-screen h-screen min-w-[320px] min-h-[320px] max-w-full max-h-full overflow-auto bg-gray-50 rounded-lg shadow-inner touch-manipulation"
+        className={`relative w-full h-full min-h-[60vh] min-w-[90vw] max-w-full max-h-full overflow-auto bg-gray-50 rounded-lg shadow-inner ${isDraggingCanvas ? 'pan-grabbing' : 'pan-grab'} touch-manipulation`}
         style={{
-          position: 'relative',
-          width: '100vw',
-          height: '100vh',
-          overscrollBehavior: 'contain',
-          touchAction: 'pan-x pan-y',
           WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
           boxSizing: 'border-box',
         }}
         onWheel={handleWheel}
@@ -161,52 +161,45 @@ const MindMapCanvas: React.FC = memo(() => {
         tabIndex={0}
         aria-label="Mind map canvas"
       >
-        {/* Floating Toolbar */}
-        <div className="absolute top-4 right-4 z-50 flex flex-col space-y-2 bg-white/90 p-2 rounded-lg shadow-lg border border-gray-200">
-          <button
-            onClick={zoomToFit}
-            className="btn btn-secondary"
-            title="Zoom to Fit"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.418-5v5h-.581M4 20v-5h.582m15.418 5v-5h-.581M9 15l3-3m0 0l3-3m-3 3V4m0 8v8" /></svg>
-          </button>
-        </div>
-        <div
-          className="mindmap-canvas-inner absolute left-0 top-0"
-          style={{
-            width: '100%',
-            height: '100%',
-            transform: `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${canvasScale})`,
-            transformOrigin: 'center center',
-            minWidth: 320,
-            minHeight: 320,
-            aspectRatio: '1.5/1',
-            pointerEvents: 'auto',
-          }}
+      {/* Floating Toolbar */}
+      <div className="absolute top-4 right-4 z-50 flex flex-col space-y-2 bg-white/90 p-2 rounded-lg shadow-lg border border-gray-200">
+        <button
+          onClick={zoomToFit}
+          className="btn btn-secondary"
+          title="Zoom to Fit"
         >
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            {connectorsToRender.map((conn) => (
-              <Connector
-                key={`${conn.parent.id}-${conn.child.id}`}
-                parent={conn.parent}
-                child={conn.child}
-                canvasOffset={{ x: 0, y: 0 }}
-                canvasScale={1}
-              />
-            ))}
-          </svg>
-          {/* Mind map nodes */}
-          {visibleNodes.map((node) => (
-            <MindMapNode
-              key={node.id}
-              node={node}
-              canvasOffset={{ x: 0, y: 0 }}
-              canvasScale={1 }
-            />
-          ))}
-        </div>
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.418-5v5h-.581M4 20v-5h.582m15.418 5v-5h-.581M9 15l3-3m0 0l3-3m-3 3V4m0 8v8" /></svg>
+        </button>
       </div>
-
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        {connectorsToRender.map((conn) => (
+          <Connector
+            key={`${conn.parent.id}-${conn.child.id}`}
+            parent={conn.parent}
+            child={conn.child}
+            canvasOffset={canvasOffset}
+            canvasScale={canvasScale}
+          />
+        ))}
+      </svg>
+      {/* Mind map nodes */}
+      {/* Drop target highlight: show a subtle overlay when dragging over canvas (future: can be per node) */}
+      {visibleNodes.map((node) => (
+        <MindMapNode
+          key={node.id}
+          node={node}
+          canvasOffset={canvasOffset}
+          canvasScale={canvasScale}
+        />
+      ))}
+      {/* Canvas drop target styling (optional, for future multi-node drop) */}
+      {/* <motion.div
+        className="absolute inset-0 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isDraggingCanvas ? 0.12 : 0 }}
+        style={{ background: 'radial-gradient(circle, #60a5fa22 0%, transparent 80%)' }}
+      /> */}
+      </div>
     </DndContext>
   );
 });

@@ -1,5 +1,6 @@
 // by Amit Yadav: Toolbar for mind map actions, refactored for UI consistency
 import React, { memo } from 'react';
+import { toast } from 'sonner';
 import { useMindMapStore } from '../store/mindMapStore';
 import { PlusCircleIcon, PrinterIcon, TrashIcon, HomeIcon } from '@heroicons/react/24/outline';
 import Button from './ui/Button';
@@ -79,7 +80,40 @@ const Toolbar: React.FC = memo(() => {
             Print
           </Button>
           <Button
-            onClick={resetMap}
+            onClick={() => {
+              toast(
+                (t) => (
+                  <div className="flex flex-col gap-2">
+                    <span className="font-semibold text-blue-700">Clear all nodes?</span>
+                    <span className="text-xs text-gray-500">This will remove all nodes from your mind map. This action cannot be undone.</span>
+                    <div className="flex gap-2 justify-end mt-2">
+                      <button
+                        className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-xs font-semibold"
+                        onClick={() => {
+                          resetMap();
+                          toast.dismiss(t);
+                          toast.success('All nodes cleared', {
+                            description: 'Your mind map is now empty.',
+                            position: 'top-right',
+                            duration: 2200,
+                            className: 'sonner-toast sonner-toast-blue sonner-toast-sm',
+                          });
+                        }}
+                      >Clear All</button>
+                      <button
+                        className="px-3 py-1 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 text-xs font-semibold"
+                        onClick={() => toast.dismiss(t)}
+                      >Cancel</button>
+                    </div>
+                  </div>
+                ),
+                {
+                  position: 'top-right',
+                  duration: 8000,
+                  className: 'sonner-toast sonner-toast-blue',
+                }
+              );
+            }}
             variant="danger"
             icon={<TrashIcon className="h-5 w-5" />}
             title="Clear All Nodes"

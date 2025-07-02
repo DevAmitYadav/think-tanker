@@ -30,18 +30,24 @@ const NodeLabelForm: React.FC<NodeLabelFormProps> = ({ initialLabel, onSubmit, o
       <div className="flex space-x-2 mt-3">
         <button
           type="submit"
-          className="rounded-full px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400/60"
+          className="rounded-md w-9 h-9 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400/60 text-base"
           disabled={isSubmitting || isSaving}
+          title="Save"
         >
-          {isSaving ? 'Saving...' : 'Save'}
+          {isSaving ? (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+          ) : (
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+          )}
         </button>
         <button
           type="button"
-          className="rounded-full px-5 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-semibold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-zinc-400/60 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          className="rounded-md w-9 h-9 flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-zinc-400/60 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800 text-base"
           onClick={onCancel}
           disabled={isSaving}
+          title="Cancel"
         >
-          Cancel
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
     </form>

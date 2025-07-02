@@ -1,8 +1,8 @@
 
-
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './styles/sonner-toast.css';
 import App from './App.tsx';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { Toaster } from 'sonner';
@@ -11,8 +11,10 @@ import { Toaster } from 'sonner';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
-      <Toaster position="top-center" richColors closeButton />
+      <>
+        <Toaster position="top-right" richColors closeButton />
+        <App />
+      </>
     </ErrorBoundary>
   </StrictMode>,
 );

@@ -14,7 +14,7 @@ interface MindMapNodeProps {
   canvasScale: number;
 }
 
-const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
+const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canvasScale }) => {
   const {
     updateNode,
     addNode,
@@ -46,11 +46,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
   const nodeStyle = {
     left: node.position.x + (transform?.x ?? 0),
     top: node.position.y + (transform?.y ?? 0),
-    minWidth: 180,
-    minHeight: 60,
-    borderRadius: 20,
-    background: 'linear-gradient(135deg, var(--node-bg-from, #f8fafc) 0%, var(--node-bg-to, #e5e7eb) 100%)',
-    border: isSelected ? '2.5px solid var(--node-border-active, #2563eb)' : '2px solid var(--node-border, #cbd5e1)',
+    minWidth: 200,
+    minHeight: 70,
+    borderRadius: 24,
+    background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+    border: isSelected ? '2.5px solid #2563eb' : '2px solid #cbd5e1',
     zIndex: isDragging ? 50 : isSelected ? 20 : 10,
     fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
     boxShadow: isDragging
@@ -59,11 +59,17 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
       ? '0 8px 32px 0 rgba(37,99,235,0.18)'
       : '0 4px 24px 0 rgba(30,41,59,0.10)',
     transition: 'box-shadow 0.2s, border 0.2s, background 0.2s',
-    padding: 0,
-    margin: 0,
+    padding: '24px 20px 18px 20px',
+    margin: '12px 18px',
     overflow: 'visible',
     opacity: isDragging ? 0.92 : 1,
     position: 'absolute' as const,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    boxSizing: 'border-box',
   };
 
   // by Amit Yadav: Start editing label
@@ -77,8 +83,21 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
       setIsSaving(true);
       try {
         await updateNode(node.id, { label: label.trim() });
+        toast.success('Node renamed', {
+          description: 'Node label updated.',
+          position: 'top-right',
+          duration: 3000,
+          className: 'bg-white text-blue-700 font-semibold rounded-lg shadow-lg border border-blue-200 z-[99999]',
+          style: { fontSize: 16, padding: '16px 24px', minWidth: 220, top: 24, right: 24, maxWidth: '90vw' }
+        });
       } catch {
-        alert('Failed to update label.');
+        toast.error('Failed to update label.', {
+          description: 'Could not update node label.',
+          position: 'top-right',
+          duration: 3000,
+          className: 'bg-white text-red-700 font-semibold rounded-lg shadow-lg border border-red-200 z-[99999]',
+          style: { fontSize: 16, padding: '16px 24px', minWidth: 220, top: 24, right: 24, maxWidth: '90vw' }
+        });
       }
       setIsSaving(false);
     }
@@ -149,24 +168,26 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
         />
       ) : (
         <motion.span
-          className="mind-map-node-label text-center text-slate-900 dark:text-slate-100 text-lg font-semibold py-2 px-4 cursor-text select-none leading-snug tracking-wide drop-shadow-sm"
+          className="mind-map-node-label text-center text-slate-900 dark:text-slate-100 text-lg font-semibold cursor-text select-none leading-snug tracking-wide drop-shadow-sm"
           tabIndex={0}
           role="button"
           aria-label="Edit node label"
           style={{
             wordBreak: 'break-word',
             textShadow: '0 1px 2px #fff, 0 0px 8px #e0e7ff',
-            borderRadius: 14,
-            background: 'rgba(255,255,255,0.7)',
-            boxShadow: '0 2px 8px 0 rgba(80,120,255,0.08)',
-            padding: '8px 18px',
-            margin: '0 0 2px 0',
-            minWidth: 80,
-            maxWidth: 220,
+            borderRadius: 16,
+            background: 'rgba(255,255,255,0.92)',
+            boxShadow: '0 2px 12px 0 rgba(80,120,255,0.10)',
+            padding: '12px 24px',
+            margin: '0 0 10px 0',
+            minWidth: 120,
+            maxWidth: 260,
             display: 'inline-block',
             fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
+            fontSize: 20,
+            letterSpacing: 0.2,
           }}
-          whileHover={{ background: 'rgba(255,255,255,0.92)', scale: 1.04 }}
+          whileHover={{ background: 'rgba(255,255,255,1)', scale: 1.08 }}
           transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         >
           {node.label}
@@ -175,7 +196,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
 
       {isSelected && (
         <motion.div
-          className="absolute -bottom-10 flex space-x-2 bg-white/90 dark:bg-zinc-900/90 p-1.5 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 z-30 backdrop-blur-md"
+          className="absolute left-1/2 -bottom-14 -translate-x-1/2 flex flex-row gap-3 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-700 z-30 backdrop-blur-md"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -207,10 +228,13 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
             <button
               onClick={async (e) => {
                 e.stopPropagation();
-                if (window.confirm('Delete this node and all its children?')) {
-                  await deleteNode(node.id);
-                  toast.success('Node deleted');
-                }
+                await deleteNode(node.id);
+                toast.success('Node deleted', {
+                  description: 'Node and its children were deleted.',
+                  position: 'top-right',
+                  duration: 2200,
+                  className: 'sonner-toast sonner-toast-red sonner-toast-sm',
+                });
               }}
               className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/60 transition-all duration-150"
               title="Delete Node"
