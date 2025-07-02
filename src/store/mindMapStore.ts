@@ -26,9 +26,22 @@ interface MindMapActions {
   setIsDraggingCanvas: (isDragging: boolean) => void;
   editingNodeId: NodeId | null;
   setEditingNodeId: (id: NodeId | null) => void;
+  setNodeSize: (nodeId: NodeId, size: { width: number; height: number }) => void;
 }
 
 export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) => ({
+  // Update a node's actual rendered size (used for zoomToFit)
+  setNodeSize: (nodeId: NodeId, size: { width: number; height: number }) => {
+    set(state => ({
+      nodes: {
+        ...state.nodes,
+        [nodeId]: {
+          ...state.nodes[nodeId],
+          size,
+        },
+      },
+    }));
+  },
   nodes: {},
   rootNodeId: null,
   selectedNodeId: null,

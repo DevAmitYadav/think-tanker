@@ -1,6 +1,6 @@
 
 // by Amit Yadav: Main MindMapCanvas component for rendering nodes and connectors
-import React, { useRef, useEffect, memo } from 'react';
+import React, { useRef,useEffect,  memo } from 'react';
 import { useMindMapStore } from '../store/mindMapStore';
 import MindMapNode from './MindMapNode';
 import Connector from './Connector';
@@ -20,9 +20,6 @@ const MindMapCanvas: React.FC = memo(() => {
     rootNodeId,
     canvasOffset,
     canvasScale,
-    panCanvas,
-    setIsDraggingCanvas,
-    setSelectedNodeId,
     isDraggingCanvas
   } = useMindMapStore();
 
@@ -42,7 +39,7 @@ const MindMapCanvas: React.FC = memo(() => {
   const handleDragEnd = (event: any) => {
     const { active, delta } = event;
     if (!active || !delta) return;
-    const nodeId = active.id;
+    const nodeId = String(active.id);
     const node = nodes[nodeId];
     if (!node) return;
     // Update node position in unscaled canvas coordinates
@@ -121,23 +118,35 @@ const MindMapCanvas: React.FC = memo(() => {
     }
   };
 
-  // Zoom to fit all nodes
+  // Zoom to fit all nodes (use actual rendered node sizes)
   const zoomToFit = () => {
     if (visibleNodes.length === 0) return;
-    // Calculate bounding box
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     visibleNodes.forEach(node => {
-      minX = Math.min(minX, node.position.x);
-      minY = Math.min(minY, node.position.y);
-      maxX = Math.max(maxX, node.position.x);
-      maxY = Math.max(maxY, node.position.y);
+      const width = node.size?.width ?? 220;
+      const height = node.size?.height ?? 90;
+      const nodeLeft = node.position.x;
+      const nodeTop = node.position.y;
+      const nodeRight = node.position.x + width;
+      const nodeBottom = node.position.y + height;
+      minX = Math.min(minX, nodeLeft);
+      minY = Math.min(minY, nodeTop);
+      maxX = Math.max(maxX, nodeRight);
+      maxY = Math.max(maxY, nodeBottom);
     });
-    const width = maxX - minX + 160; // node width
-    const height = maxY - minY + 40; // node height
+    // Add a small extra margin for visual comfort
+    const extraMargin = 24;
+    minX -= extraMargin;
+    minY -= extraMargin;
+    maxX += extraMargin;
+    maxY += extraMargin;
+    const width = maxX - minX;
+    const height = maxY - minY;
     const container = canvasRef.current;
     if (!container) return;
     const cWidth = container.offsetWidth;
     const cHeight = container.offsetHeight;
+    if (width === 0 || height === 0) return;
     const scale = Math.min(cWidth / width, cHeight / height, 1);
     const offsetX = (cWidth - width * scale) / 2 - minX * scale;
     const offsetY = (cHeight - height * scale) / 2 - minY * scale;
@@ -158,7 +167,6 @@ const MindMapCanvas: React.FC = memo(() => {
         }}
         onWheel={handleWheel}
         onDoubleClick={handleDoubleClick}
-        tabIndex={0}
         aria-label="Mind map canvas"
       >
       {/* Floating Toolbar */}

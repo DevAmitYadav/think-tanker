@@ -7,6 +7,7 @@ export interface MindMapNode {
   children: NodeId[]; // Array of child IDs
   position: { x: number; y: number }; // Absolute position on the canvas
   collapsed: boolean;
+  size?: { width: number; height: number }; // Actual rendered size (optional)
 }
 
 export type SyncStatus = 'online' | 'offline' | 'syncing' | 'error' | 'initial_load';

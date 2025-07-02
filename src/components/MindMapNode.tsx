@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, memo } from 'react';
+// Ensure memo is imported from React
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useDraggable } from '@dnd-kit/core';
 import NodeLabelForm from './ui/NodeLabelForm';
 import type { MindMapNode as MindMapNodeType } from '../types';
 import { useMindMapStore } from '../store/mindMapStore';
-// import { motion } from 'framer-motion';
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/20/solid';
 
 interface MindMapNodeProps {
@@ -43,32 +43,41 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   });
 
   // Position the node on the canvas based on its stored position, offset, and scale
+  // Extract ternary values for zIndex and boxShadow for clarity and to fix linter errors
+  let zIndex = 10;
+  if (isDragging) {
+    zIndex = 50;
+  } else if (isSelected) {
+    zIndex = 20;
+  }
+  let boxShadow = `0 ${4 * canvasScale}px ${24 * canvasScale}px 0 rgba(30,41,59,0.10)`;
+  if (isDragging) {
+    boxShadow = `0 ${12 * canvasScale}px ${36 * canvasScale}px 0 rgba(37,99,235,0.22)`;
+  } else if (isSelected) {
+    boxShadow = `0 ${8 * canvasScale}px ${32 * canvasScale}px 0 rgba(37,99,235,0.18)`;
+  }
   const nodeStyle = {
-    left: node.position.x + (transform?.x ?? 0),
-    top: node.position.y + (transform?.y ?? 0),
-    minWidth: 200,
-    minHeight: 70,
-    borderRadius: 24,
+    left: node.position.x * canvasScale + canvasOffset.x + (transform?.x ?? 0),
+    top: node.position.y * canvasScale + canvasOffset.y + (transform?.y ?? 0),
+    minWidth: `min(80vw, ${150 * canvasScale}px)`,
+    minHeight: `min(20vh, ${56 * canvasScale}px)`,
+    borderRadius: `${14 * canvasScale}px`,
     background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
-    border: isSelected ? '2.5px solid #2563eb' : '2px solid #cbd5e1',
-    zIndex: isDragging ? 50 : isSelected ? 20 : 10,
+    border: isSelected ? `${2 * canvasScale}px solid #2563eb` : `${1.5 * canvasScale}px solid #cbd5e1`,
+    zIndex,
     fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
-    boxShadow: isDragging
-      ? '0 12px 36px 0 rgba(37,99,235,0.22)'
-      : isSelected
-      ? '0 8px 32px 0 rgba(37,99,235,0.18)'
-      : '0 4px 24px 0 rgba(30,41,59,0.10)',
+    boxShadow,
     transition: 'box-shadow 0.2s, border 0.2s, background 0.2s',
-    padding: '24px 20px 18px 20px',
-    margin: '12px 18px',
+    padding: `${12 * canvasScale}px ${12 * canvasScale}px`,
+    margin: `${8 * canvasScale}px ${10 * canvasScale}px`,
     overflow: 'visible',
     opacity: isDragging ? 0.92 : 1,
     position: 'absolute' as const,
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
+    justifyContent: 'flex-start',
+    gap: `${6 * canvasScale}px`,
     boxSizing: 'border-box',
   };
 
@@ -118,7 +127,23 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   }, [isEditing]);
 
 
-  // Remove drag and DnD logic for now. Only allow click/select/edit/delete.
+  // Report actual node size to store for zoomToFit
+  useEffect(() => {
+    if (nodeRef.current) {
+      const rect = nodeRef.current.getBoundingClientRect();
+      // Only update if size changed or not set
+      if (
+        !node.size ||
+        node.size.width !== rect.width ||
+        node.size.height !== rect.height
+      ) {
+        useMindMapStore.getState().setNodeSize(node.id, { width: rect.width, height: rect.height });
+      }
+    }
+    // Only run after render, and when label or scale changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.label, canvasScale]);
+
   return (
     <motion.div
       ref={el => {
@@ -128,9 +153,9 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       className={`mind-map-node absolute flex flex-col justify-center items-center min-w-[140px] max-w-[90vw] md:min-w-[180px] md:max-w-[320px] whitespace-normal break-words select-none`}
       style={{
         ...nodeStyle,
-        width: 'clamp(140px, 40vw, 320px)',
-        minHeight: 60,
-        maxWidth: '90vw',
+        width: 'clamp(90px, 28vw, 220px)',
+        minHeight: 36,
+        maxWidth: '80vw',
         boxSizing: 'border-box',
       }}
       tabIndex={0}
@@ -140,7 +165,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       }}
       onDoubleClick={e => {
         e.stopPropagation();
-        handleLabelDoubleClick();
+        setEditingNodeId(node.id);
       }}
       onContextMenu={e => e.preventDefault()}
       aria-label={isEditing ? 'Editing node label' : 'Mind map node'}
@@ -167,31 +192,34 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           isSaving={isSaving}
         />
       ) : (
-        <motion.span
-          className="mind-map-node-label text-center text-slate-900 dark:text-slate-100 text-lg font-semibold cursor-text select-none leading-snug tracking-wide drop-shadow-sm"
-          tabIndex={0}
-          role="button"
-          aria-label="Edit node label"
+        <span
+          className="mind-map-node-label text-center text-slate-900 dark:text-slate-100 text-lg font-semibold cursor-pointer select-none leading-snug tracking-wide drop-shadow-sm"
+          aria-label="Node label"
           style={{
             wordBreak: 'break-word',
             textShadow: '0 1px 2px #fff, 0 0px 8px #e0e7ff',
-            borderRadius: 16,
-            background: 'rgba(255,255,255,0.92)',
-            boxShadow: '0 2px 12px 0 rgba(80,120,255,0.10)',
-            padding: '12px 24px',
-            margin: '0 0 10px 0',
-            minWidth: 120,
-            maxWidth: 260,
-            display: 'inline-block',
+            borderRadius: 10,
+            background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%)',
+            boxShadow: '0 1px 6px 0 rgba(80,120,255,0.10)',
+            padding: '7px 12px',
+            margin: '8px 0 6px 0',
+            minWidth: 'min(40vw, 60px)',
+            maxWidth: 'min(80vw, 220px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
-            fontSize: 20,
-            letterSpacing: 0.2,
+            fontSize: 'clamp(0.85rem, 1vw, 1.1rem)',
+            fontWeight: 600,
+            letterSpacing: 0.12,
+            textAlign: 'center',
+            color: '#1e293b',
+            lineHeight: 1.2,
+            transition: 'background 0.2s, box-shadow 0.2s, transform 0.2s',
           }}
-          whileHover={{ background: 'rgba(255,255,255,1)', scale: 1.08 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         >
           {node.label}
-        </motion.span>
+        </span>
       )}
 
       {isSelected && (
