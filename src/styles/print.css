@@ -21,4 +21,33 @@
   #root > *:not(.print-container) {
     display: none !important;
   }
+  /* But always show SVGs inside print-container */
+  .print-container svg {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: visible !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+  }
+  .print-container svg * {
+    display: initial !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Ensure SVG connectors are visible when printing */
+  svg, svg * {
+    visibility: visible !important;
+    display: inline !important;
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .mind-map-connector {
+    stroke: #2563eb !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
 }

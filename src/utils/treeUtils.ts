@@ -51,14 +51,18 @@ export const getDescendantIds = (nodes: Record<NodeId, MindMapNode>, startingNod
 /**
  * Calculates a reasonable initial position for a new child node relative to its parent.
  */
-export const calculateNewChildPosition = (parentNode: MindMapNode, siblingCount: number): { x: number; y: number } => {
-  const offsetX = 150; // Horizontal offset from parent
-  const offsetY = 50;  // Vertical spacing for children
+export const calculateNewChildPosition = (parentNode: MindMapNode, siblingCount: number, siblings: MindMapNode[] = []): { x: number; y: number } => {
+  const offsetX = 180;
+  const minOffsetY = 80;
 
-  // Simple layout: position children to the right, stacked vertically
+  // Find the lowest y among siblings, or use parent y if no siblings
+  let baseY = parentNode.position.y;
+  if (siblings.length > 0) {
+    baseY = Math.max(...siblings.map(s => s.position.y));
+  }
   return {
     x: parentNode.position.x + offsetX,
-    y: parentNode.position.y + (siblingCount * offsetY) - (siblingCount / 2 * offsetY), // Center around parent Y
+    y: baseY + minOffsetY,
   };
 };
 
@@ -66,8 +70,6 @@ export const calculateNewChildPosition = (parentNode: MindMapNode, siblingCount:
  * Helper to get node dimensions dynamically (approximate for layout)
  */
 export const getNodeDimensions = (nodeId: NodeId): { width: number; height: number } => {
-  // In a real app, you might measure this from the DOM or set fixed sizes
-  // For simplicity, let's assume average dimensions.
-  // These should ideally match the actual CSS dimensions of .mind-map-node
-  return { width: 160, height: 40 };
+  // These should match the actual CSS minWidth/minHeight of .mind-map-node
+  return { width: 180, height: 60 };
 };

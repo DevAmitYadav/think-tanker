@@ -1,5 +1,6 @@
 
 @import "tailwindcss";
+@import './styles/global.css';
 
 /* Custom print styles */
 @media print {

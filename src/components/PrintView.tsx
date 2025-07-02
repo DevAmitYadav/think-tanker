@@ -39,23 +39,25 @@ const PrintView: React.FC = () => {
   const offsetY = -minY + 50; // Add some padding
 
   return (
-    <div className="print-container absolute w-full h-full overflow-hidden bg-white text-black print:block hidden"
+    <div className="print-container relative w-full h-full bg-white text-black print:block hidden"
          style={{
-           // Apply a transform to shift content so it's visible in print
-           // This moves everything by offsetX, offsetY pixels.
            transform: `translate(${offsetX}px, ${offsetY}px)`,
-           // Adjust min-height/width to ensure the print canvas scales correctly
-           minWidth: `${contentWidth + 100}px`, // content + padding
-           minHeight: `${contentHeight + 100}px`, // content + padding
+           minWidth: `${contentWidth + 100}px`,
+           minHeight: `${contentHeight + 100}px`,
+           overflow: 'visible',
          }}>
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        {connectorsToRender.map((conn, index) => (
+      <svg
+        className="print-svg block w-full h-full"
+        style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', overflow: 'visible', zIndex: 2 }}
+      >
+        {connectorsToRender.map((conn) => (
           <Connector
             key={`${conn.parent.id}-${conn.child.id}`}
             parent={{ ...conn.parent, position: { x: conn.parent.position.x, y: conn.parent.position.y } }}
             child={{ ...conn.child, position: { x: conn.child.position.x, y: conn.child.position.y } }}
-            canvasOffset={{ x: 0, y: 0 }} // No canvas offset for print
-            canvasScale={1} // No canvas scale for print
+            canvasOffset={{ x: 0, y: 0 }}
+            canvasScale={1}
+            forceSolidColor={true}
           />
         ))}
       </svg>
@@ -63,8 +65,8 @@ const PrintView: React.FC = () => {
         <MindMapNode
           key={node.id}
           node={{ ...node, position: { x: node.position.x, y: node.position.y } }}
-          canvasOffset={{ x: 0, y: 0 }} // No canvas offset for print
-          canvasScale={1} // No canvas scale for print
+          canvasOffset={{ x: 0, y: 0 }}
+          canvasScale={1}
         />
       ))}
     </div>

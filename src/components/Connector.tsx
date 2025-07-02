@@ -1,5 +1,6 @@
 // by Amit Yadav: Connector component for rendering edges between nodes
 import React, { memo } from 'react';
+import { motion } from 'framer-motion';
 import type { MindMapNode } from '../types';
 import { getNodeDimensions } from '../utils/treeUtils';
 
@@ -10,7 +11,7 @@ interface ConnectorProps {
   canvasScale: number;
 }
 
-const Connector: React.FC<ConnectorProps> = memo(({ parent, child, canvasOffset, canvasScale }) => {
+const Connector: React.FC<ConnectorProps & { forceSolidColor?: boolean }> = memo(({ parent, child, canvasOffset, canvasScale, forceSolidColor }) => {
   const parentDims = getNodeDimensions(parent.id);
   const childDims = getNodeDimensions(child.id);
 
@@ -20,25 +21,41 @@ const Connector: React.FC<ConnectorProps> = memo(({ parent, child, canvasOffset,
   const cX = child.position.x * canvasScale + canvasOffset.x;
   const cY = child.position.y * canvasScale + canvasOffset.y;
 
-  // Determine start and end points for the line
-  const startX = pX + parentDims.width * canvasScale / 2;
-  const startY = pY + parentDims.height * canvasScale / 2;
-  const endX = cX - childDims.width * canvasScale / 2;
-  const endY = cY + childDims.height * canvasScale / 2;
+  // Connect from right edge of parent to left edge of child, both vertically centered
+  const startX = pX + parentDims.width * canvasScale;
+  const startY = pY + (parentDims.height * canvasScale) / 2;
+  const endX = cX;
+  const endY = cY + (childDims.height * canvasScale) / 2;
 
-  // Bezier curve for a visually appealing connector
-  const midX = (startX + endX) / 2;
-  const pathData = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
+  // Modern mind map connector: smooth, thick, colored, with shadow and rounded ends
+  // Use a more visually balanced Bezier curve (horizontal offset for control points)
+  const dx = Math.max(Math.abs(endX - startX) * 0.4, 60); // curve strength
+  const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
 
   return (
-    <path
-      d={pathData}
-      stroke="#a0a0a0"
-      strokeWidth={2}
-      fill="none"
-      className="mind-map-connector transition-all duration-100 ease-out"
-      style={{ transitionProperty: 'd' }}
-    />
+    <>
+      {!forceSolidColor && (
+        <defs>
+          <linearGradient id="mindmap-connector-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#38bdf8" />
+          </linearGradient>
+        </defs>
+      )}
+      <motion.path
+        d={pathData}
+        stroke={forceSolidColor ? '#2563eb' : 'url(#mindmap-connector-gradient)'}
+        strokeWidth={3.5}
+        fill="none"
+        strokeLinecap="round"
+        filter={forceSolidColor ? 'none' : 'drop-shadow(0px 2px 8px #818cf888)'}
+        className="mind-map-connector"
+        initial={{ pathLength: 0, opacity: 0.7 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        style={{ transitionProperty: 'd' }}
+      />
+    </>
   );
 });
 

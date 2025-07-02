@@ -1,4 +1,7 @@
 import React, { useRef, useEffect, memo } from 'react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import { useDraggable } from '@dnd-kit/core';
 import NodeLabelForm from './ui/NodeLabelForm';
 import type { MindMapNode as MindMapNodeType } from '../types';
 import { useMindMapStore } from '../store/mindMapStore';
@@ -11,7 +14,7 @@ interface MindMapNodeProps {
   canvasScale: number;
 }
 
-const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canvasScale }) => {
+const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node }) => {
   const {
     updateNode,
     addNode,
@@ -28,17 +31,39 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
-
   const isSelected = selectedNodeId === node.id;
   const isRoot = node.id === rootNodeId;
   const isEditing = editingNodeId === node.id;
 
+  // DnD Kit: Make node draggable (must use isEditing after declaration)
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: node.id,
+    data: { nodeId: node.id },
+    disabled: isEditing, // Don't allow drag while editing
+  });
+
   // Position the node on the canvas based on its stored position, offset, and scale
   const nodeStyle = {
-    left: node.position.x * canvasScale + canvasOffset.x,
-    top: node.position.y * canvasScale + canvasOffset.y,
-    transform: `scale(${canvasScale})`, // Scale the node itself slightly for visual effect
-    transformOrigin: 'top left', // Scale from top-left for consistent positioning
+    left: node.position.x + (transform?.x ?? 0),
+    top: node.position.y + (transform?.y ?? 0),
+    minWidth: 180,
+    minHeight: 60,
+    borderRadius: 20,
+    background: 'linear-gradient(135deg, var(--node-bg-from, #f8fafc) 0%, var(--node-bg-to, #e5e7eb) 100%)',
+    border: isSelected ? '2.5px solid var(--node-border-active, #2563eb)' : '2px solid var(--node-border, #cbd5e1)',
+    zIndex: isDragging ? 50 : isSelected ? 20 : 10,
+    fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
+    boxShadow: isDragging
+      ? '0 12px 36px 0 rgba(37,99,235,0.22)'
+      : isSelected
+      ? '0 8px 32px 0 rgba(37,99,235,0.18)'
+      : '0 4px 24px 0 rgba(30,41,59,0.10)',
+    transition: 'box-shadow 0.2s, border 0.2s, background 0.2s',
+    padding: 0,
+    margin: 0,
+    overflow: 'visible',
+    opacity: isDragging ? 0.92 : 1,
+    position: 'absolute' as const,
   };
 
   // by Amit Yadav: Start editing label
@@ -76,12 +101,19 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
 
   // Remove drag and DnD logic for now. Only allow click/select/edit/delete.
   return (
-    <div
-      ref={nodeRef}
-      className={`mind-map-node absolute bg-white shadow-lg rounded-lg px-4 py-2 flex flex-col justify-center items-center cursor-pointer min-w-[120px] max-w-[200px] whitespace-normal break-words transition-all duration-100 ease-out border-2 ${
-        isSelected ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200'
-      } z-10`}
-      style={nodeStyle}
+    <motion.div
+      ref={el => {
+        nodeRef.current = el;
+        setNodeRef(el);
+      }}
+      className={`mind-map-node absolute flex flex-col justify-center items-center min-w-[140px] max-w-[90vw] md:min-w-[180px] md:max-w-[320px] whitespace-normal break-words select-none`}
+      style={{
+        ...nodeStyle,
+        width: 'clamp(140px, 40vw, 320px)',
+        minHeight: 60,
+        maxWidth: '90vw',
+        boxSizing: 'border-box',
+      }}
       tabIndex={0}
       onClick={e => {
         e.stopPropagation();
@@ -93,7 +125,21 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       }}
       onContextMenu={e => e.preventDefault()}
       aria-label={isEditing ? 'Editing node label' : 'Mind map node'}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ boxShadow: '0 8px 32px 0 rgba(37,99,235,0.22)', scale: 1.03 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
     >
+      {/* Drag handle overlay: only this area is draggable, not label or buttons */}
+      <div
+        className="absolute inset-0 z-0 cursor-grab rounded-2xl"
+        style={{ pointerEvents: isEditing ? 'none' : 'auto' }}
+        {...listeners}
+        {...attributes}
+        tabIndex={-1}
+        aria-label="Drag node"
+      />
       {isEditing ? (
         <NodeLabelForm
           initialLabel={node.label}
@@ -102,18 +148,38 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           isSaving={isSaving}
         />
       ) : (
-        <span
-          className="mind-map-node-label text-center text-gray-800 text-sm font-medium py-1 px-2 cursor-text select-none"
+        <motion.span
+          className="mind-map-node-label text-center text-slate-900 dark:text-slate-100 text-lg font-semibold py-2 px-4 cursor-text select-none leading-snug tracking-wide drop-shadow-sm"
           tabIndex={0}
           role="button"
           aria-label="Edit node label"
+          style={{
+            wordBreak: 'break-word',
+            textShadow: '0 1px 2px #fff, 0 0px 8px #e0e7ff',
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.7)',
+            boxShadow: '0 2px 8px 0 rgba(80,120,255,0.08)',
+            padding: '8px 18px',
+            margin: '0 0 2px 0',
+            minWidth: 80,
+            maxWidth: 220,
+            display: 'inline-block',
+            fontFamily: 'Inter, Open Sans, Roboto, sans-serif',
+          }}
+          whileHover={{ background: 'rgba(255,255,255,0.92)', scale: 1.04 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 22 }}
         >
           {node.label}
-        </span>
+        </motion.span>
       )}
 
       {isSelected && (
-        <div className="absolute -bottom-8 flex space-x-1.5 bg-white p-1 rounded-md shadow-lg border border-gray-200 z-30">
+        <motion.div
+          className="absolute -bottom-10 flex space-x-2 bg-white/90 dark:bg-zinc-900/90 p-1.5 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-700 z-30 backdrop-blur-md"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        >
           <button
             onClick={async (e) => {
               e.stopPropagation();
@@ -125,10 +191,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
               }
               setIsAdding(false);
             }}
-            className={`p-1 rounded-full hover:bg-blue-100 text-blue-600 transition-colors duration-150 ${isAdding ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`p-2 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/60 transition-all duration-150 ${isAdding ? 'opacity-50 cursor-not-allowed' : ''}`}
             title="Add Child Node"
             aria-label="Add Child Node"
             disabled={isAdding}
+            style={{ boxShadow: '0 1px 4px 0 rgba(37,99,235,0.08)' }}
           >
             {isAdding ? (
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
@@ -136,18 +203,19 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
               <PlusIcon className="h-4 w-4" />
             )}
           </button>
-          {!isRoot && ( // Don't allow deleting the root node directly
+          {!isRoot && (
             <button
               onClick={async (e) => {
                 e.stopPropagation();
-                // by Amit Yadav: Confirm before deleting
                 if (window.confirm('Delete this node and all its children?')) {
                   await deleteNode(node.id);
+                  toast.success('Node deleted');
                 }
               }}
-              className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-colors duration-150"
+              className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/60 transition-all duration-150"
               title="Delete Node"
               aria-label="Delete Node"
+              style={{ boxShadow: '0 1px 4px 0 rgba(239,68,68,0.08)' }}
             >
               <TrashIcon className="h-4 w-4" />
             </button>
@@ -157,9 +225,10 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
               e.stopPropagation();
               handleLabelDoubleClick();
             }}
-            className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
+            className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-400/60 transition-all duration-150"
             title="Edit Label"
             aria-label="Edit Label"
+            style={{ boxShadow: '0 1px 4px 0 rgba(71,85,105,0.08)' }}
           >
             <PencilIcon className="h-4 w-4" />
           </button>
@@ -169,16 +238,17 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
                 e.stopPropagation();
                 toggleCollapse(node.id);
               }}
-              className="p-1 rounded-full hover:bg-gray-100 text-gray-600 transition-colors duration-150"
+              className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-400/60 transition-all duration-150"
               title={node.collapsed ? "Expand Node" : "Collapse Node"}
               aria-label={node.collapsed ? "Expand Node" : "Collapse Node"}
+              style={{ boxShadow: '0 1px 4px 0 rgba(71,85,105,0.08)' }}
             >
               {node.collapsed ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronUpIcon className="h-4 w-4" />}
             </button>
           )}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 });
 

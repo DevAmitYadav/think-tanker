@@ -100,8 +100,9 @@ export const useMindMapStore = create<MindMapState & MindMapActions>((set, get) 
     const parent = store.nodes[parentId];
     if (!parent) return;
 
-    const siblingCount = parent.children.length;
-    const newPosition = calculateNewChildPosition(parent, siblingCount);
+    // Get all sibling nodes
+    const siblings = parent.children.map(cid => store.nodes[cid]).filter(Boolean);
+    const newPosition = calculateNewChildPosition(parent, siblings.length, siblings);
     const childId = generateId();
     const childNode: MindMapNode = {
       id: childId,
