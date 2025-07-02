@@ -9,7 +9,7 @@ const Spinner: React.FC = () => (
         <circle cx="32" cy="32" r="28" stroke="#3B82F6" strokeWidth="4" className="opacity-20" />
         <circle cx="32" cy="32" r="20" stroke="#60A5FA" strokeWidth="2" className="opacity-30 animate-pulse" />
         {/* Central node */}
-        <circle cx="32" cy="32" r="6" fill="#2563EB" className="animate-bounce" />
+        {/* <circle cx="32" cy="32" r="6" fill="#2563EB" className="animate-bounce" /> */}
         {/* Orbiting nodes */}
         <circle cx="32" cy="10" r="3" fill="#60A5FA" className="animate-orbit" />
         <circle cx="54" cy="32" r="3" fill="#60A5FA" className="animate-orbit2" />
