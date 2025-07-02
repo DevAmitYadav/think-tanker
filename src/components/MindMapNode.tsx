@@ -2,8 +2,7 @@ import React, { useRef, useEffect, memo } from 'react';
 import NodeLabelForm from './ui/NodeLabelForm';
 import type { MindMapNode as MindMapNodeType } from '../types';
 import { useMindMapStore } from '../store/mindMapStore';
-import { usePointerDrag } from '../hooks/usePointerDrag';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/20/solid';
 
 interface MindMapNodeProps {
@@ -53,7 +52,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
       setIsSaving(true);
       try {
         await updateNode(node.id, { label: label.trim() });
-      } catch (e) {
+      } catch {
         alert('Failed to update label.');
       }
       setIsSaving(false);
@@ -74,55 +73,26 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
     }
   }, [isEditing]);
 
-  // by Amit Yadav: Ref to store the node's position *at the start of the drag*
-  // This helps calculate the delta from the original position, not the current continuously updated one.
-  const startPosRef = useRef({ x: 0, y: 0 });
 
-
-
-  // by Amit Yadav: Robust drag logic with correct ref usage
-  const { isDragging, pointerDown } = usePointerDrag({
-    onPointerDown: (e) => {
-      startPosRef.current = { x: node.position.x, y: node.position.y };
-      setSelectedNodeId(node.id);
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    onDragMove: (_e, dx, dy) => {
-      // Calculate new position in unscaled canvas coordinates
-      const newX = startPosRef.current.x + dx / canvasScale;
-      const newY = startPosRef.current.y + dy / canvasScale;
-      // by Amit Yadav: Always persist to Firestore for real-time sync
-      updateNode(node.id, { position: { x: newX, y: newY } });
-    },
-    onDragEnd: (e) => {
-      e.stopPropagation();
-    },
-    onClick: (e) => {
-      setSelectedNodeId(node.id);
-      e.stopPropagation();
-    }
-  });
-
+  // Remove drag and DnD logic for now. Only allow click/select/edit/delete.
   return (
-    <motion.div
+    <div
       ref={nodeRef}
-      className={`mind-map-node absolute bg-white shadow-lg rounded-lg px-4 py-2 flex flex-col justify-center items-center cursor-default min-w-[120px] max-w-[200px] whitespace-normal break-words transition-all duration-100 ease-out border-2 ${
+      className={`mind-map-node absolute bg-white shadow-lg rounded-lg px-4 py-2 flex flex-col justify-center items-center cursor-pointer min-w-[120px] max-w-[200px] whitespace-normal break-words transition-all duration-100 ease-out border-2 ${
         isSelected ? 'border-blue-500 ring-4 ring-blue-200' : 'border-gray-200'
-      } ${isDragging ? 'z-20 node-grabbing' : 'z-10'}`}
+      } z-10`}
       style={nodeStyle}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: canvasScale }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.15 }}
-      onPointerDown={pointerDown}
-      onClick={(e) => {
-        // This is handled by usePointerDrag's onClick, but good for safety
+      tabIndex={0}
+      onClick={e => {
         e.stopPropagation();
         setSelectedNodeId(node.id);
       }}
-      // Prevent context menu on right click
-      onContextMenu={(e) => e.preventDefault()}
+      onDoubleClick={e => {
+        e.stopPropagation();
+        handleLabelDoubleClick();
+      }}
+      onContextMenu={e => e.preventDefault()}
+      aria-label={isEditing ? 'Editing node label' : 'Mind map node'}
     >
       {isEditing ? (
         <NodeLabelForm
@@ -130,28 +100,13 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           onSubmit={handleLabelSave}
           onCancel={handleLabelCancel}
           isSaving={isSaving}
-          inputRef={inputRef}
-          autoFocus
         />
       ) : (
         <span
           className="mind-map-node-label text-center text-gray-800 text-sm font-medium py-1 px-2 cursor-text select-none"
-          onDoubleClick={handleLabelDoubleClick}
-          onTouchEnd={e => {
-            // Only trigger on tap, not drag
-            if (!isEditing) {
-              e.stopPropagation();
-              handleLabelDoubleClick();
-            }
-          }}
           tabIndex={0}
           role="button"
           aria-label="Edit node label"
-          onKeyDown={e => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              handleLabelDoubleClick();
-            }
-          }}
         >
           {node.label}
         </span>
@@ -165,7 +120,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
               setIsAdding(true);
               try {
                 await addNode(node.id);
-              } catch (err) {
+              } catch {
                 alert('Failed to add child node.');
               }
               setIsAdding(false);
@@ -223,7 +178,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
           )}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 });
 

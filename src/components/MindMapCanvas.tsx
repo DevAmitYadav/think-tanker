@@ -5,7 +5,7 @@ import { useMindMapStore } from '../store/mindMapStore';
 import MindMapNode from './MindMapNode';
 import Connector from './Connector';
 import { getVisibleNodes } from '../utils/treeUtils';
-import { usePointerDrag } from '../hooks/usePointerDrag';
+import { DndContext } from '@dnd-kit/core';
 
 // by Amit Yadav: Utility to check if event target is a mind map node
 const isNodeElement = (target: EventTarget | null): boolean => {
@@ -37,29 +37,19 @@ const MindMapCanvas: React.FC = memo(() => {
       .map(childId => ({ parent: node, child: nodes[childId] }))
   );
 
-  // by Amit Yadav: Canvas drag and click logic
-  const { pointerDown: canvasPointerDown } = usePointerDrag({
-    onPointerDown: (e) => {
-      // Only pan with right click or when not interacting with a node
-      if (e.button === 2 || !isNodeElement(e.target)) {
-        setIsDraggingCanvas(true);
-        setSelectedNodeId(null);
-      }
-    },
-    onDragMove: (_e, dx, dy) => {
-      if (isDraggingCanvas) {
-        panCanvas(dx, dy);
-      }
-    },
-    onDragEnd: () => {
-      setIsDraggingCanvas(false);
-    },
-    onClick: (e) => {
-      if (!isNodeElement(e.target)) {
-        setSelectedNodeId(null);
-      }
-    }
-  });
+
+  // DnD Kit: Handle node drag end to update position
+  const handleDragEnd = (event: any) => {
+    const { active, delta } = event;
+    if (!active || !delta) return;
+    const nodeId = active.id;
+    const node = nodes[nodeId];
+    if (!node) return;
+    // Update node position in unscaled canvas coordinates
+    const newX = node.position.x + delta.x / canvasScale;
+    const newY = node.position.y + delta.y / canvasScale;
+    useMindMapStore.getState().updateNode(nodeId, { position: { x: newX, y: newY } });
+  };
 
 
   // by Amit Yadav: Handle zooming with mouse wheel, keeping zoom centered on pointer
@@ -157,15 +147,15 @@ const MindMapCanvas: React.FC = memo(() => {
 
   // --- UI ---
   return (
-    <div
-      ref={canvasRef}
-      className={`relative w-full h-full overflow-hidden bg-gray-50 rounded-lg shadow-inner ${isDraggingCanvas ? 'pan-grabbing' : 'pan-grab'}`}
-      onPointerDown={canvasPointerDown}
-      onWheel={handleWheel}
-      onDoubleClick={handleDoubleClick}
-      tabIndex={0} // Accessibility: allow keyboard focus
-      aria-label="Mind map canvas"
-    >
+    <DndContext onDragEnd={handleDragEnd}>
+      <div
+        ref={canvasRef}
+        className={`relative w-full h-full overflow-hidden bg-gray-50 rounded-lg shadow-inner ${isDraggingCanvas ? 'pan-grabbing' : 'pan-grab'}`}
+        onWheel={handleWheel}
+        onDoubleClick={handleDoubleClick}
+        tabIndex={0} // Accessibility: allow keyboard focus
+        aria-label="Mind map canvas"
+      >
       {/* Floating Toolbar */}
       <div className="absolute top-4 right-4 z-50 flex flex-col space-y-2 bg-white/90 p-2 rounded-lg shadow-lg border border-gray-200">
         <button
@@ -196,7 +186,8 @@ const MindMapCanvas: React.FC = memo(() => {
           canvasScale={canvasScale}
         />
       ))}
-    </div>
+      </div>
+    </DndContext>
   );
 });
 

@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 
+
 interface DragCallbacks {
   onPointerDown?: (event: React.PointerEvent<HTMLElement>, startX: number, startY: number) => void;
   onDragStart?: (event: React.PointerEvent<HTMLElement>, initialX: number, initialY: number) => void;
@@ -8,15 +9,20 @@ interface DragCallbacks {
   onClick?: (event: React.PointerEvent<HTMLElement>) => void;
 }
 
+interface UsePointerDragOptions {
+  allowedButtons?: number[]; // e.g. [0] for left, [2] for right, [0,2] for both
+}
+
 const DRAG_THRESHOLD_PX = 5; // Minimum movement before a drag is initiated
 
 /**
  * A custom hook for implementing flexible drag-and-drop behavior using Pointer Events.
  * It differentiates between click and drag actions.
  * @param callbacks - An object containing optional callback functions for different drag states.
+ * @param options - Optional config, e.g. allowed mouse buttons
  * @returns An object with `isDragging` state and `pointerDown` handler to attach to an element.
  */
-export const usePointerDrag = (callbacks: DragCallbacks) => {
+export const usePointerDrag = (callbacks: DragCallbacks, options?: UsePointerDragOptions) => {
   const isDraggingRef = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
   const initialClientPos = useRef({ x: 0, y: 0 });
@@ -36,12 +42,12 @@ export const usePointerDrag = (callbacks: DragCallbacks) => {
       if (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX) {
         isDraggingRef.current = true;
         setIsCurrentlyDragging(true);
-        callbacks.onDragStart?.(event as any, startPos.current.x, startPos.current.y);
+        callbacks.onDragStart?.(event as unknown as React.PointerEvent<HTMLElement>, startPos.current.x, startPos.current.y);
       }
     }
 
     if (isDraggingRef.current) {
-      callbacks.onDragMove?.(event as any, dx, dy, startPos.current.x, startPos.current.y);
+      callbacks.onDragMove?.(event as unknown as React.PointerEvent<HTMLElement>, dx, dy, startPos.current.x, startPos.current.y);
     }
   }, [callbacks]);
 
@@ -55,10 +61,10 @@ export const usePointerDrag = (callbacks: DragCallbacks) => {
     }
 
     if (isDraggingRef.current) {
-      callbacks.onDragEnd?.(event as any, startPos.current.x + (event.clientX - initialClientPos.current.x), startPos.current.y + (event.clientY - initialClientPos.current.y), startPos.current.x, startPos.current.y);
+      callbacks.onDragEnd?.(event as unknown as React.PointerEvent<HTMLElement>, startPos.current.x + (event.clientX - initialClientPos.current.x), startPos.current.y + (event.clientY - initialClientPos.current.y), startPos.current.x, startPos.current.y);
     } else {
       // Only trigger click if no drag occurred
-      callbacks.onClick?.(event as any);
+      callbacks.onClick?.(event as unknown as React.PointerEvent<HTMLElement>);
     }
 
     isDraggingRef.current = false;
@@ -69,8 +75,9 @@ export const usePointerDrag = (callbacks: DragCallbacks) => {
 
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    // Only allow left mouse button (or touch) for dragging
-    if (event.button !== 0) return;
+    // Allow configurable mouse buttons (default: left only)
+    const allowed = options?.allowedButtons ?? [0];
+    if (!allowed.includes(event.button)) return;
 
     // Prevent default browser drag behavior
     event.preventDefault();
@@ -86,7 +93,7 @@ export const usePointerDrag = (callbacks: DragCallbacks) => {
 
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
-  }, [callbacks, handlePointerMove, handlePointerUp]);
+  }, [callbacks, handlePointerMove, handlePointerUp, options]);
 
   // Clean up event listeners on unmount
   useEffect(() => {
