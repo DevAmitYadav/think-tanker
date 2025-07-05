@@ -33,29 +33,16 @@ const Connector: React.FC<ConnectorProps & { forceSolidColor?: boolean }> = memo
   const pathData = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
 
   return (
-    <>
-      {!forceSolidColor && (
-        <defs>
-          <linearGradient id="mindmap-connector-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#6366f1" />
-            <stop offset="100%" stopColor="#38bdf8" />
-          </linearGradient>
-        </defs>
-      )}
-      <motion.path
-        d={pathData}
-        stroke={forceSolidColor ? '#2563eb' : 'url(#mindmap-connector-gradient)'}
-        strokeWidth={3.5}
-        fill="none"
-        strokeLinecap="round"
-        filter={forceSolidColor ? 'none' : 'drop-shadow(0px 2px 8px #818cf888)'}
-        className="mind-map-connector"
-        initial={{ pathLength: 0, opacity: 0.7 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        style={{ transitionProperty: 'd' }}
-      />
-    </>
+    <path
+      d={pathData}
+      stroke={forceSolidColor ? '#2563eb' : 'url(#mindmap-connector-gradient)'}
+      strokeWidth={3.5}
+      fill="none"
+      strokeLinecap="round"
+      filter={forceSolidColor ? 'none' : 'drop-shadow(0px 2px 8px #818cf888)'}
+      className="mind-map-connector"
+      style={{ transitionProperty: 'd' }}
+    />
   );
 });
 

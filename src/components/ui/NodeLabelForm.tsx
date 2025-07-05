@@ -1,56 +1,169 @@
 // by Amit Yadav: Node label edit form using React Hook Form + Yup
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { nodeLabelSchema } from '../../utils/validation';
+import React, { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, X, Loader2 } from 'lucide-react';
+import { Button } from './button';
+import { cn } from '../../lib/utils';
 
 interface NodeLabelFormProps {
   initialLabel: string;
-  onSubmit: (label: string) => void;
+  onSubmit: (label: string) => Promise<void>;
   onCancel: () => void;
   isSaving?: boolean;
 }
 
+const NodeLabelForm: React.FC<NodeLabelFormProps> = ({
+  initialLabel,
+  onSubmit,
+  onCancel,
+  isSaving = false
+}) => {
+  const [label, setLabel] = useState(initialLabel);
+  const [isValid, setIsValid] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-const NodeLabelForm: React.FC<NodeLabelFormProps> = ({ initialLabel, onSubmit, onCancel, isSaving }) => {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: { label: initialLabel },
-    resolver: yupResolver(nodeLabelSchema),
-  });
+  // Validation function
+  const validateLabel = (value: string): boolean => {
+    if (!value.trim()) {
+      setErrorMessage('Label cannot be empty');
+      return false;
+    }
+    if (value.length > 100) {
+      setErrorMessage('Label must be less than 100 characters');
+      return false;
+    }
+    if (/^\s+$/.test(value)) {
+      setErrorMessage('Label cannot contain only whitespace');
+      return false;
+    }
+    setErrorMessage('');
+    return true;
+  };
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLabel(value);
+    setIsValid(validateLabel(value));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isValid && !isSaving) {
+      await onSubmit(label.trim());
+    }
+  };
+
+  // Handle key events
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onCancel();
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (isValid && !isSaving) {
+        onSubmit(label.trim());
+      }
+    }
+  };
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit((data) => onSubmit(data.label))} className="flex flex-col items-center w-full">
-      <input
-        {...register('label')}
-        className="text-center w-full bg-gradient-to-br from-zinc-50 to-zinc-200 dark:from-zinc-900 dark:to-zinc-800 border border-zinc-300 dark:border-zinc-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 rounded-2xl shadow text-zinc-900 dark:text-zinc-100 text-lg font-semibold px-4 py-3 transition-all duration-150 outline-none"
-        style={{ minWidth: 160, maxWidth: 260, minHeight: 44, height: 48, marginBottom: 8, letterSpacing: 0.2, boxShadow: '0 2px 8px #e0e7ff' }}
-        autoFocus
-      />
-      {errors.label && <span className="text-xs text-red-600 mt-1">{errors.label.message as string}</span>}
-      <div className="flex space-x-2 mt-3">
-        <button
+    <motion.form
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      onSubmit={handleSubmit}
+      className="w-full"
+    >
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={label}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "w-full px-3 py-2 text-sm font-medium",
+            "bg-white border-2 rounded-lg shadow-sm",
+            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+            "transition-all duration-200",
+            "placeholder-gray-400",
+            isValid 
+              ? "border-gray-300 focus:border-blue-500" 
+              : "border-red-300 focus:border-red-500 focus:ring-red-500"
+          )}
+          placeholder="Enter node label..."
+          maxLength={100}
+          disabled={isSaving}
+        />
+        
+        {/* Character count */}
+        <div className="absolute -bottom-6 right-0 text-xs text-gray-500">
+          {label.length}/100
+        </div>
+
+        {/* Error message */}
+        <AnimatePresence>
+          {!isValid && errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute -bottom-8 left-0 text-xs text-red-600 font-medium"
+            >
+              {errorMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center justify-end gap-2 mt-8">
+        <Button
+          type="button"
+          onClick={onCancel}
+          variant="outline"
+          size="sm"
+          disabled={isSaving}
+          className="h-8 px-3"
+        >
+          <X className="h-3 w-3 mr-1" />
+          Cancel
+        </Button>
+        
+        <Button
           type="submit"
-          className="rounded-md w-9 h-9 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400/60 text-base"
-          disabled={isSubmitting || isSaving}
-          title="Save"
+          disabled={!isValid || isSaving}
+          size="sm"
+          className="h-8 px-3"
         >
           {isSaving ? (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+            <>
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Saving...
+            </>
           ) : (
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <>
+              <Check className="h-3 w-3 mr-1" />
+              Save
+            </>
           )}
-        </button>
-        <button
-          type="button"
-          className="rounded-md w-9 h-9 flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-800 font-bold shadow transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-zinc-400/60 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800 text-base"
-          onClick={onCancel}
-          disabled={isSaving}
-          title="Cancel"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
+        </Button>
       </div>
-    </form>
+
+      {/* Keyboard shortcuts hint */}
+      <div className="mt-2 text-xs text-gray-500 text-center">
+        Press Enter to save, Esc to cancel
+      </div>
+    </motion.form>
   );
 };
 
