@@ -83,7 +83,7 @@ const Toolbar: React.FC = memo(() => {
           <Button
             onClick={() => {
               toast.custom(
-                (t) => (
+                (t: string | number) => (
                   <div className="flex flex-col gap-2">
                     <span className="font-semibold text-blue-700">Clear all nodes?</span>
                     <span className="text-xs text-gray-500">This will remove all nodes from your mind map. This action cannot be undone.</span>
