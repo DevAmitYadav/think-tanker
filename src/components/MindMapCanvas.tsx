@@ -6,6 +6,7 @@ import MindMapNode from './MindMapNode';
 import Connector from './Connector';
 import { getVisibleNodes } from '../utils/treeUtils';
 import { DndContext } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 
 // by Amit Yadav: Utility to check if event target is a mind map node
 const isNodeElement = (target: EventTarget | null): boolean => {
@@ -36,7 +37,7 @@ const MindMapCanvas: React.FC = memo(() => {
 
 
   // DnD Kit: Handle node drag end to update position
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     if (!active || !delta) return;
     const nodeId = String(active.id);

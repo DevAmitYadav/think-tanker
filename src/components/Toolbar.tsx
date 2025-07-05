@@ -1,6 +1,7 @@
 // by Amit Yadav: Toolbar for mind map actions, refactored for UI consistency
 import React, { memo } from 'react';
 import { toast } from 'sonner';
+
 import { useMindMapStore } from '../store/mindMapStore';
 import { PlusCircleIcon, PrinterIcon, TrashIcon, HomeIcon } from '@heroicons/react/24/outline';
 import Button from './ui/Button';
@@ -81,7 +82,7 @@ const Toolbar: React.FC = memo(() => {
           </Button>
           <Button
             onClick={() => {
-              toast(
+              toast.custom(
                 (t) => (
                   <div className="flex flex-col gap-2">
                     <span className="font-semibold text-blue-700">Clear all nodes?</span>

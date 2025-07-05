@@ -51,7 +51,7 @@ export const getDescendantIds = (nodes: Record<NodeId, MindMapNode>, startingNod
 /**
  * Calculates a reasonable initial position for a new child node relative to its parent.
  */
-export const calculateNewChildPosition = (parentNode: MindMapNode, siblingCount: number, siblings: MindMapNode[] = []): { x: number; y: number } => {
+export const calculateNewChildPosition = (parentNode: MindMapNode, _siblingCount: number, siblings: MindMapNode[] = []): { x: number; y: number } => {
   const offsetX = 180;
   const minOffsetY = 80;
 
@@ -69,7 +69,8 @@ export const calculateNewChildPosition = (parentNode: MindMapNode, siblingCount:
 /**
  * Helper to get node dimensions dynamically (approximate for layout)
  */
-export const getNodeDimensions = (nodeId: NodeId): { width: number; height: number } => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const getNodeDimensions = (_nodeId: NodeId): { width: number; height: number } => {
   // These should match the actual CSS minWidth/minHeight of .mind-map-node
   return { width: 180, height: 60 };
 };
