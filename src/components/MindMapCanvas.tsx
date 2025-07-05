@@ -7,7 +7,7 @@ import Connector from './Connector';
 import { getVisibleNodes } from '../utils/treeUtils';
 import { DndContext, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { 
   ZoomIn, 
@@ -34,8 +34,7 @@ const MindMapCanvas: React.FC = memo(() => {
     canvasScale,
     isDraggingCanvas,
     setCanvasScale,
-    panCanvas,
-    setSelectedNodeId
+    panCanvas
   } = useMindMapStore();
 
   const [isPanning, setIsPanning] = useState(false);

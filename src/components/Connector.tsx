@@ -1,6 +1,5 @@
 // by Amit Yadav: Connector component for rendering edges between nodes
 import React, { memo } from 'react';
-import { motion } from 'framer-motion';
 import type { MindMapNode } from '../types';
 import { getNodeDimensions } from '../utils/treeUtils';
 

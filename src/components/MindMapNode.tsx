@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, memo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useDraggable } from '@dnd-kit/core';
 import NodeLabelForm from './ui/NodeLabelForm';
@@ -13,13 +13,11 @@ import {
   Edit3, 
   Copy,
   Star,
-  Palette,
-  MoreHorizontal,
   Move
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { cn, generateGradient } from '../lib/utils';
+import { cn } from '../lib/utils';
 import ReactDOM from 'react-dom';
 
 interface MindMapNodeProps {
@@ -29,7 +27,7 @@ interface MindMapNodeProps {
 }
 
 // Utility to check if a DOMRect is visible in the viewport
-function isRectVisible(rect) {
+function isRectVisible(rect: DOMRect): boolean {
   return (
     rect.width > 0 && rect.height > 0 &&
     rect.bottom > 0 && rect.right > 0 &&
@@ -53,7 +51,6 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   
   const [isSaving, setIsSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [showActions, setShowActions] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -75,7 +72,6 @@ const MindMapNode: React.FC<MindMapNodeProps> = memo(({ node, canvasOffset, canv
   });
 
   // Generate consistent color based on node id
-  const nodeGradient = generateGradient(node.id);
   const isStarred = node.metadata?.starred || false;
 
   // Advanced positioning with smooth transforms

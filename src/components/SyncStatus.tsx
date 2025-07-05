@@ -2,10 +2,8 @@ import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMindMapStore } from '../store/mindMapStore';
 import { 
-  Wifi, 
   WifiOff, 
   Cloud, 
-  CloudOff, 
   CheckCircle, 
   AlertCircle, 
   Loader2,

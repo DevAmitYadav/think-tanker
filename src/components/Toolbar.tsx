@@ -12,17 +12,14 @@ import {
   Upload,
   Settings,
   Share2,
-  Save,
   RotateCcw,
   Palette,
   Layers,
-  Eye,
-  EyeOff
+  Eye
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { cn } from '../lib/utils';
 
 const Toolbar: React.FC = memo(() => {
   const {
@@ -38,7 +35,6 @@ const Toolbar: React.FC = memo(() => {
   } = useMindMapStore();
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showExport, setShowExport] = useState(false);
 
   // Store the toast id for the clear all dialog
   let clearAllToastId: string | null = null;
@@ -123,7 +119,7 @@ const Toolbar: React.FC = memo(() => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const data = JSON.parse(e.target?.result as string);
+            JSON.parse(e.target?.result as string);
             // TODO: Implement import logic in store
             toast.success('Mind map imported', {
               description: 'Your mind map has been imported successfully',
@@ -178,7 +174,7 @@ const Toolbar: React.FC = memo(() => {
       clearAllToastId = null;
       return;
     }
-    clearAllToastId = toast.custom(
+    const toastId = toast.custom(
       (t) => (
         <Card className="w-80 border-2 border-blue-400 shadow-lg bg-white">
           <CardHeader className="pb-2 pt-5">
@@ -229,6 +225,7 @@ const Toolbar: React.FC = memo(() => {
         onDismiss: () => { clearAllToastId = null; },
       }
     );
+    clearAllToastId = String(toastId);
   };
 
   return (
