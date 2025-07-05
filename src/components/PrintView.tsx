@@ -149,54 +149,49 @@ const PrintView: React.FC = () => {
       </div>
 
       {/* Print Styles */}
-      <style>
-        @media print {
-          .print-container {
-            display: block !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-          
-          .print-header,
-          .print-footer {
-            break-inside: avoid;
-          }
-          
-          .print-content {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          
-          .mind-map-node {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          
-          /* Ensure good contrast for print */
-          .mind-map-node {
-            background: white !important;
-            border: 2px solid #000 !important;
-            color: #000 !important;
-            box-shadow: none !important;
-          }
-          
-          /* Hide interactive elements */
-          .mind-map-node button,
-          .mind-map-node .action-menu {
-            display: none !important;
-          }
-          
-          /* Ensure text is readable */
-          .mind-map-node-label {
-            color: #000 !important;
-            background: white !important;
-            border: 1px solid #ccc !important;
-          }
-        }
-      </style>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              .print-container {
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+              }
+              .print-header,
+              .print-footer {
+                break-inside: avoid;
+              }
+              .print-content {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              .mind-map-node {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              .mind-map-node {
+                background: white !important;
+                border: 2px solid #000 !important;
+                color: #000 !important;
+                box-shadow: none !important;
+              }
+              .mind-map-node button,
+              .mind-map-node .action-menu {
+                display: none !important;
+              }
+              .mind-map-node-label {
+                color: #000 !important;
+                background: white !important;
+                border: 1px solid #ccc !important;
+              }
+            }
+          `,
+        }}
+      />
     </div>
   );
 };
