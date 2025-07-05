@@ -17,7 +17,7 @@ import {
   MoreHorizontal,
   Move
 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { cn, generateGradient } from '../lib/utils';
 import ReactDOM from 'react-dom';

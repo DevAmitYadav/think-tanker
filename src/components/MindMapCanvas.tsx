@@ -35,7 +35,6 @@ const MindMapCanvas: React.FC = memo(() => {
     isDraggingCanvas,
     setCanvasScale,
     panCanvas,
-    setCanvasOffset,
     setSelectedNodeId
   } = useMindMapStore();
 
@@ -181,15 +180,15 @@ const MindMapCanvas: React.FC = memo(() => {
       const offsetX = (cWidth - width * scale) / 2 - minX * scale;
       const offsetY = (cHeight - height * scale) / 2 - minY * scale;
       setCanvasScale(scale);
-      setCanvasOffset({ x: offsetX, y: offsetY });
+      panCanvas(offsetX - canvasOffset.x, offsetY - canvasOffset.y);
     });
-  }, [visibleNodes, setCanvasScale, setCanvasOffset]);
+  }, [visibleNodes, setCanvasScale, panCanvas, canvasOffset]);
 
   // Reset view
   const resetView = useCallback(() => {
     setCanvasScale(1);
-    setCanvasOffset({ x: 0, y: 0 });
-  }, [setCanvasScale, setCanvasOffset]);
+    panCanvas(0 - canvasOffset.x, 0 - canvasOffset.y);
+  }, [setCanvasScale, panCanvas, canvasOffset]);
 
   // by Amit Yadav: Canvas ref and effect for context menu and cursor
   const canvasRef = useRef<HTMLDivElement>(null);

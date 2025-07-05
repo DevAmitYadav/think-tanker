@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Loader2 } from 'lucide-react';
-import { Button } from './button';
+import { Button } from './Button';
 import { cn } from '../../lib/utils';
 
 interface NodeLabelFormProps {

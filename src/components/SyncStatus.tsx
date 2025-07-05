@@ -11,7 +11,7 @@ import {
   Loader2,
   RefreshCw
 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { cn } from '../lib/utils';
 

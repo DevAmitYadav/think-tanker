@@ -8,9 +8,10 @@ export interface MindMapNode {
   position: { x: number; y: number }; // Absolute position on the canvas
   collapsed: boolean;
   size?: { width: number; height: number }; // Actual rendered size (optional)
+  metadata?: { starred?: boolean };
 }
 
-export type SyncStatus = 'online' | 'offline' | 'syncing' | 'error' | 'initial_load';
+export type SyncStatus = 'online' | 'offline' | 'syncing' | 'error' | 'initial_load' | 'synced';
 
 export interface MindMapState {
   nodes: Record<NodeId, MindMapNode>;

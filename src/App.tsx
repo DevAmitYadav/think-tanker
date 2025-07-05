@@ -6,7 +6,7 @@ import MindMapCanvas from './components/MindMapCanvas';
 import SyncStatus from './components/SyncStatus';
 import PrintView from './components/PrintView';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import { Button } from './components/ui/button';
+import { Button } from './components/ui/Button';
 import { Wifi, WifiOff, AlertCircle, Loader2, Brain, Zap, PencilLine, MousePointer2, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { TooltipProvider } from './components/ui/tooltip';

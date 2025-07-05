@@ -149,7 +149,7 @@ const PrintView: React.FC = () => {
       </div>
 
       {/* Print Styles */}
-      <style jsx>{`
+      <style>
         @media print {
           .print-container {
             display: block !important;
@@ -196,7 +196,7 @@ const PrintView: React.FC = () => {
             border: 1px solid #ccc !important;
           }
         }
-      `}</style>
+      </style>
     </div>
   );
 };
